@@ -1,0 +1,39 @@
+# ======================
+# VSCode
+# ======================
+.vscode/
+*.code-workspace
+*.db
+*.db-shm
+*.db-wal
+
+# ======================
+# Micro-ROS / Colcon
+# ======================
+build/
+install/
+log/
+*.elf
+*.o
+*.bin
+*.a
+*.so
+*.pyc
+__pycache__/
+
+# ======================
+# Allgemein
+# ======================
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+*.bak
+*.log
+
+# ======================
+# Optional: große temporäre Dateien
+# ======================
+*.zip
+*.tar.gz
+*.7z
