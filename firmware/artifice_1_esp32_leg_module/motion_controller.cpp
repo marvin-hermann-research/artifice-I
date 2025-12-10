@@ -12,24 +12,20 @@ MotionController::MotionController(ServoDriver& driver)
 }
 
 void MotionController::initialize() {
-    // Initialisiere aktuelle und Zielwinkel
-    for (size_t i = 0; i < ServoDriver::NUM_SERVOS; ++i) {
+    // Initialisiere Startwinkel für alle Servos
+    for (size_t i = 0; i < NUM_SERVOS; ++i) {
         current_angles[i].store(START_ANGLE);
         target_angles[i].store(START_ANGLE);
-        task_indices[i] = static_cast<int>(i);
-
-        // Setze Servo auf Startwinkel über ServoDriver
-        driver->setAngle(START_ANGLE, i); // 'driver->' statt 'servoDriver.'
+        driver->setAngle(START_ANGLE, i);
     }
 
-    // Starte FreeRTOS Task für jeden Servo
-    for (size_t i = 0; i < ServoDriver::NUM_SERVOS; ++i) {
-        BaseType_t ok = xTaskCreate(taskWrapper, "servo_task", 4096, &task_indices[i], 5, nullptr);
-        if (ok != pdPASS) {
-            printf("Failed to create task for servo %zu\n", i);
-        }
+    // Nur ein Task für alle Servos
+    BaseType_t ok = xTaskCreate(taskWrapper, "servo_task", 4096, nullptr, 5, nullptr);
+    if (ok != pdPASS) {
+        printf("Failed to create main servo task\n");
     }
 }
+
 
 void MotionController::spin() {
     while (true) {
@@ -49,36 +45,36 @@ void MotionController::setTargetAngle(int angle, int index) {
     printf("Target angle set for servo %d: %d\n", index, angle);
 }
 
-void MotionController::servoLoop(int index) {
-    const int stepSize = 1;      // 1° pro Schritt
-    const int delayMs  = 20;     // 20ms Pause zwischen den Schritten extra langsam für Testzwecke
+void MotionController::allServosLoop() {
+    const int stepSize = 1;     // Schrittweite
+    const int loopDelayMs = 20; // Zykluszeit für alle Servos (momentan extra langsam für Testzwecke)
 
     while (true) {
-        int current = current_angles[index].load();
-        int target  = target_angles[index].load();
 
-        if (current < target) {
-            current += stepSize;
-            if (current > target) current = target; // overshoot verhindern
+        for (size_t i = 0; i < NUM_SERVOS; ++i) {
+
+            int current = current_angles[i].load();
+            int target  = target_angles[i].load();
+
+            if (current < target) {
+                current += stepSize;
+                if (current > target) current = target; // overshoot vermeiden
+            }
+            else if (current > target) {
+                current -= stepSize;
+                if (current < target) current = target;
+            }
+
+            current_angles[i].store(current);
+            driver->setAngle(current, i);
         }
-        else if (current > target) {
-            current -= stepSize;
-            if (current < target) current = target; // overshoot verhindern
-        }
 
-        // neuen Wert speichern
-        current_angles[index].store(current);
-
-        // Servo ansteuern
-        driver->setAngle(current, index);
-
-        vTaskDelay(pdMS_TO_TICKS(delayMs));
+        // EIN Delay für ALLE Servos
+        vTaskDelay(pdMS_TO_TICKS(loopDelayMs));
     }
 }
 
-
 void MotionController::taskWrapper(void* param) {
-    int index = *static_cast<int*>(param);
-    if (globalInstance) globalInstance->servoLoop(index);
+    if (globalInstance) globalInstance->allServosLoop();
     vTaskDelete(nullptr);
 }
