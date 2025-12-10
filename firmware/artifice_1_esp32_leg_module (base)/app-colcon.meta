@@ -25,9 +25,9 @@
             "params": {
                 "source-list": [
                     "app.cpp",
-                    "motion_controller.cpp",
-                    "ros_interface.cpp", 
-                    "servo_driver.cpp"
+                    "src/motion_controller.cpp",
+                    "src/ros_interface.cpp", 
+                    "src/servo_driver.cpp"
                 ]
             }
         }
