@@ -15,12 +15,28 @@ public:
 
     static const size_t NUM_SERVOS = 6;
 
+
 private:
     void allServosLoop();           // Neuer gemeinsamer Loop
-    static void taskWrapper(void*); // FreeRTOS Wrapper
-    static const int START_ANGLE = 100;
+    static void servoTaskWrapper(void*); // FreeRTOS Wrapper
+
+    // Homing als Instanzmethoden
+    bool homeServo(int index);
+    void homeAllServos();
+
+    static const int START_ANGLE = 90;
 
     ServoDriver* driver;
     std::atomic<int> current_angles[NUM_SERVOS];
     std::atomic<int> target_angles[NUM_SERVOS];
+
+    int raw_angle[NUM_SERVOS];             // interner "Rohwinkel" wird gebraucht für die take steps methode in servo driver
+
+
+    // Homing-Daten pro Servo
+    int  homed_min[NUM_SERVOS];
+    int  homed_max[NUM_SERVOS];
+    bool homed[NUM_SERVOS];
+
+    static const gpio_num_t DEAD_STOP_BUTTON;
 };

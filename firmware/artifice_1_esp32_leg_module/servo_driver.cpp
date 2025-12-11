@@ -40,14 +40,34 @@ void ServoDriver::initializePWM() {
 void ServoDriver::setAngle(int angle, int index) {
     if (index < 0 || index >= static_cast<int>(NUM_SERVOS)) return;
 
-    if (angle < 0) angle = 0;
-    if (angle > 180) angle = 180;
-
-    // Map 0..180 -> duty (16-bit) for 500..2500us on 20ms period
-    // Hier: duty = (pulse_us / 20000us) * 65535
     const int pulse_min_us = 500;
     const int pulse_max_us = 2500;
+
+    // frei gewählter "Winkel" -> Pulse, dann auf sicheren Bereich klemmen
     int pulse = pulse_min_us + (angle * (pulse_max_us - pulse_min_us) / 180);
+    if (pulse < pulse_min_us) pulse = pulse_min_us;
+    if (pulse > pulse_max_us) pulse = pulse_max_us;
+
+    uint32_t duty = static_cast<uint32_t>((int64_t)pulse * 65535LL / 20000LL);
+
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNELS[index], duty);
+    ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNELS[index]);
+}
+
+void ServoDriver::moveToRawAngle(int index, int raw_angle) {
+    if (index < 0 || index >= static_cast<int>(NUM_SERVOS)) return;
+
+    // MG90S-typischer Pulsbereich: ~500–2500 µs bei 50 Hz [web:101][web:111]
+    const int pulse_min_us = 500;
+    const int pulse_max_us = 2500;
+
+    // Mapping: Rohwinkel -> Pulsbreite
+    int pulse = pulse_min_us + (raw_angle * (pulse_max_us - pulse_min_us) / 180);
+
+    // Sicherheits-Clip nur auf PWM, nicht auf "Winkel"
+    if (pulse < pulse_min_us) pulse = pulse_min_us;
+    if (pulse > pulse_max_us) pulse = pulse_max_us;
+
     uint32_t duty = static_cast<uint32_t>((int64_t)pulse * 65535LL / 20000LL);
 
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNELS[index], duty);

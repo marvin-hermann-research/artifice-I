@@ -10,6 +10,7 @@ public:
     void initializePWM();
     // Sets the angle of the servo at the given index
     void setAngle(int angle, int index);
+    void moveToRawAngle(int index, int raw_angle);
     static const size_t NUM_SERVOS = 6;
 
 private:
